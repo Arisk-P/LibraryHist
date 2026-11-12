@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>LibraryHist</title>
+  <meta name="description" content="Keep track of the latest chapter or volume you read.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="app-header">
+    <div class="app-header-inner">
+      <button type="button" class="icon-btn" id="menuBtn" aria-label="Open menu" data-icon="menu"></button>
+      <button type="button" class="brand" id="brandBtn" aria-label="LibraryHist home">
+        <span class="logo" aria-hidden="true" data-icon="logo"></span>
+        <h1 class="app-name">LibraryHist</h1>
+      </button>
+    </div>
+  </header>
+
+  <!-- Home + Category page (shared list view) -->
+  <main id="listView" class="view app">
+    <section class="favorites" id="favSection" aria-labelledby="favHeading">
+      <div class="section-head">
+        <h2 id="favHeading">Favorite</h2>
+        <span class="muted small" id="favPager"></span>
+      </div>
+      <div class="fav-carousel">
+        <button type="button" class="arrow-btn" id="favPrev" aria-label="Previous favorites" data-icon="chevL"></button>
+        <div class="fav-track" id="favTrack"></div>
+        <button type="button" class="arrow-btn" id="favNext" aria-label="Next favorites" data-icon="chevR"></button>
+      </div>
+    </section>
+
+    <section class="browse" id="browseSection" aria-labelledby="browseHeading">
+      <div class="section-head">
+        <h2 id="browseHeading">Browse by</h2>
+      </div>
+      <div class="browse-grid">
+        <button type="button" class="browse-tile" data-browse="publisher">
+          <span data-icon="publisher"></span><span class="browse-label">Publisher</span><span class="muted small" id="bcPublisher"></span>
+        </button>
+        <button type="button" class="browse-tile" data-browse="author">
+          <span data-icon="author"></span><span class="browse-label">Author</span><span class="muted small" id="bcAuthor"></span>
+        </button>
+        <button type="button" class="browse-tile" data-browse="category">
+          <span data-icon="library"></span><span class="browse-label">Categories</span><span class="muted small" id="bcCategory"></span>
+        </button>
+      </div>
+    </section>
+
+    <section class="all">
+      <div class="section-head">
+        <h2 class="list-title">
+          <button type="button" class="icon-btn back-chev" id="listBack" aria-label="Back" data-icon="chevL" hidden></button>
+          <span id="listTitle">All</span>
+          <span class="count-pill" id="allCount">0</span>
+        </h2>
+        <button type="button" class="icon-btn" id="listKebab" aria-label="Options" aria-haspopup="menu" aria-expanded="false" data-icon="kebab"></button>
+      </div>
+      <p class="muted small list-sub" id="listSub" hidden></p>
+
+      <div class="controls">
+      <label class="search">
+        <span data-icon="search"></span>
+        <input type="search" id="searchInput" placeholder="Search titles" autocomplete="off" aria-label="Search titles">
+      </label>
+
+      <div class="toolbar">
+        <button type="button" class="btn btn-outline" id="filterBtn">
+          <span data-icon="filter"></span>Filter<span class="badge" id="filterBadge" hidden></span>
+        </button>
+        <div class="sort">
+          <span class="muted small">Sort by</span>
+          <div id="sortMount" class="sort-mount"></div>
+        </div>
+      </div>
+      </div>
+
+      <div class="select-bar" id="selectBar" hidden>
+        <button type="button" class="link-btn" id="selCancel">Cancel</button>
+        <span class="sel-count" id="selCount">0 selected</span>
+        <div class="sel-actions">
+          <button type="button" class="link-btn" id="selAll">All</button>
+          <button type="button" class="icon-btn" id="selFav" aria-label="Favorite selected" title="Favorite" data-icon="star"></button>
+          <button type="button" class="link-btn danger" id="selRemove" hidden>Remove</button>
+          <button type="button" class="icon-btn danger" id="selDelete" aria-label="Delete selected" title="Delete" data-icon="trash"></button>
+        </div>
+      </div>
+
+      <div class="grid" id="grid"></div>
+    </section>
+  </main>
+
+  <!-- New / Edit title -->
+  <section id="titleFormView" class="view app form-view" hidden aria-labelledby="formHeading">
+    <div class="form-head">
+      <h2 id="formHeading">New Title</h2>
+      <button type="button" class="link-btn" data-back>Back</button>
+    </div>
+
+    <form id="titleForm" novalidate>
+      <div class="para">
+        <label class="field">
+          <span class="field-label">Title name</span>
+          <input type="text" id="fName" class="input" placeholder="e.g. One Piece" maxlength="200" autocomplete="off">
+        </label>
+
+        <div class="field">
+          <span class="field-label">Title image</span>
+          <div class="image-field">
+            <label class="image-preview" id="imagePreview" title="Choose image">
+              <input type="file" id="fImage" accept="image/*" hidden>
+            </label>
+            <button type="button" class="image-remove" id="imageRemove" aria-label="Remove image" data-icon="x" hidden></button>
+            <span class="muted small">Tap to choose an image</span>
+          </div>
+        </div>
+
+        <div class="field" id="fCategoryField">
+          <span class="field-label">Categories</span>
+          <div id="fCategoryMount"></div>
+        </div>
+
+        <div class="field">
+          <div class="field-label-row">
+            <label class="field-label" for="fNumber" id="fNumberLabel">Chapter</label>
+            <div class="seg" id="fUnitSeg" role="group" aria-label="Count by" hidden>
+              <button type="button" data-unit="Chapter">Chapter</button>
+              <button type="button" data-unit="Volume">Volume</button>
+            </div>
+          </div>
+          <input type="number" id="fNumber" class="input" inputmode="decimal" min="0" step="any" placeholder="0">
+        </div>
+      </div>
+
+      <div class="para">
+        <div class="field">
+          <span class="field-label">Tags</span>
+          <div id="fTagMount"></div>
+          <div class="chips" id="fTagChips"></div>
+        </div>
+      </div>
+
+      <div class="para">
+        <label class="field">
+          <span class="field-label">URL <span class="muted">(optional)</span></span>
+          <div class="url-row">
+            <input type="url" id="fUrl" class="input" placeholder="https://" autocomplete="off">
+            <a id="fUrlOpen" class="icon-btn" target="_blank" rel="noopener noreferrer" aria-label="Open link" data-icon="external" hidden></a>
+          </div>
+        </label>
+      </div>
+
+      <p class="form-error" id="formError" role="alert" hidden></p>
+      <button type="button" class="link-btn danger delete-title" id="formDelete" hidden><span data-icon="trash"></span>Delete title</button>
+
+      <button type="submit" class="btn btn-primary fab" id="formSubmit">Create</button>
+    </form>
+  </section>
+
+  <!-- New / Edit category -->
+  <section id="categoryFormView" class="view app form-view" hidden aria-labelledby="cfHeading">
+    <div class="form-head">
+      <h2 id="cfHeading">New Category</h2>
+      <button type="button" class="link-btn" data-back>Back</button>
+    </div>
+    <form id="catForm" novalidate>
+      <div class="para">
+        <label class="field">
+          <span class="field-label">Category name</span>
+          <input type="text" id="cfName" class="input" placeholder="e.g. Manga" maxlength="60" autocomplete="off">
+        </label>
+        <div class="field">
+          <span class="field-label">Count by</span>
+          <div id="cfUnitMount"></div>
+        </div>
+      </div>
+      <p class="form-error" id="cfError" role="alert" hidden></p>
+      <button type="button" class="link-btn danger delete-title" id="cfDelete" hidden><span data-icon="trash"></span>Delete category</button>
+      <button type="submit" class="btn btn-primary fab" id="cfSubmit">Create</button>
+    </form>
+  </section>
+
+  <!-- Tags -->
+  <section id="tagsView" class="view app" hidden aria-labelledby="tagsHeading">
+    <div class="form-head">
+      <h2 id="tagsHeading">Tags</h2>
+      <button type="button" class="link-btn" data-back>Back</button>
+    </div>
+    <div class="tags-toolbar">
+      <span class="muted small" id="tagsCount"></span>
+      <button type="button" class="btn btn-primary" id="tagAdd"><span data-icon="plus"></span>New tag</button>
+    </div>
+    <div id="tagGroups"></div>
+  </section>
+
+  <!-- Browse by: Publisher / Author / Categories -->
+  <section id="browseView" class="view app" hidden aria-labelledby="browsePageHeading">
+    <div class="page-head">
+      <div class="page-title"><span id="browseIcon"></span><h2 id="browsePageHeading">Publisher</h2></div>
+      <button type="button" class="link-btn" data-back>Back</button>
+    </div>
+    <div id="browseList"></div>
+  </section>
+
+  <!-- Setting -->
+  <section id="settingsView" class="view app" hidden aria-labelledby="settingsHeading">
+    <div class="page-head">
+      <div class="page-title"><span data-icon="gear"></span><h2 id="settingsHeading">Setting</h2></div>
+      <button type="button" class="link-btn" data-back>Back</button>
+    </div>
+    <div class="settings-list">
+      <button type="button" class="settings-row" data-go="history">
+        <span data-icon="history"></span><span class="settings-label">History</span>
+        <span class="muted small" id="histCountLbl"></span><span data-icon="chevR" class="row-chev"></span>
+      </button>
+      <button type="button" class="settings-row" data-go="trash">
+        <span data-icon="trash"></span><span class="settings-label">Recently Deleted</span>
+        <span class="muted small" id="trashCountLbl"></span><span data-icon="chevR" class="row-chev"></span>
+      </button>
+    </div>
+
+    <h3 class="settings-sec">Backup</h3>
+    <div class="settings-list">
+      <button type="button" class="settings-row" id="exportBtn">
+        <span data-icon="download"></span>
+        <span class="settings-label">Export<small class="settings-hint">Zip with library.xlsx and an images folder</small></span>
+        <span data-icon="chevR" class="row-chev"></span>
+      </button>
+      <button type="button" class="settings-row" id="importBtn">
+        <span data-icon="upload"></span>
+        <span class="settings-label">Import<small class="settings-hint">Replace your library with a backup .zip</small></span>
+        <span data-icon="chevR" class="row-chev"></span>
+      </button>
+    </div>
+    <p class="muted small backup-status" id="backupStatus" role="status"></p>
+    <input type="file" id="importInput" accept=".zip,application/zip" hidden>
+  </section>
+
+  <!-- History -->
+  <section id="historyView" class="view app" hidden aria-labelledby="historyHeading">
+    <div class="page-head">
+      <div class="page-title"><span data-icon="history"></span><h2 id="historyHeading">History</h2></div>
+      <button type="button" class="link-btn" data-back>Back</button>
+    </div>
+    <div id="histList"></div>
+  </section>
+
+  <!-- Recently Deleted -->
+  <section id="trashView" class="view app" hidden aria-labelledby="trashHeading">
+    <div class="page-head">
+      <div class="page-title"><span data-icon="trash"></span><h2 id="trashHeading">Recently Deleted</h2></div>
+      <button type="button" class="link-btn" data-back>Back</button>
+    </div>
+    <div class="search-row">
+      <label class="search">
+        <span data-icon="search"></span>
+        <input type="search" id="trashSearch" placeholder="Search deleted titles" autocomplete="off" aria-label="Search deleted titles">
+      </label>
+      <button type="button" class="icon-btn" id="trashKebab" aria-label="Options" aria-haspopup="menu" aria-expanded="false" data-icon="kebab"></button>
+    </div>
+    <div class="select-bar" id="trashSelectBar" hidden>
+      <button type="button" class="link-btn" id="tsCancel">Cancel</button>
+      <span class="sel-count" id="tsCount">0 selected</span>
+      <div class="sel-actions">
+        <button type="button" class="link-btn" id="tsAll">Select all</button>
+        <button type="button" class="link-btn" id="tsRestore">Restore</button>
+        <button type="button" class="link-btn danger" id="tsDelete">Delete</button>
+      </div>
+    </div>
+    <p class="muted small trash-note">Titles are permanently deleted after 30 days.</p>
+    <ul class="row-list" id="trashList"></ul>
+  </section>
+
+  <!-- Filter panel -->
+  <div class="scrim" id="scrim" hidden></div>
+  <aside class="side-panel" id="filterPanel" aria-label="Filters" aria-hidden="true">
+    <div class="panel-head">
+      <div class="panel-title"><span data-icon="filter"></span><h2>Filters</h2></div>
+      <div class="panel-actions">
+        <button type="button" class="icon-btn" id="filterReset" aria-label="Reset filters" data-icon="reset"></button>
+        <button type="button" class="icon-btn" id="filterClose" aria-label="Close filters" data-icon="x"></button>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="para" id="filterCatPara">
+        <span class="field-label">Categories</span>
+        <div id="filterCatMount"></div>
+        <div class="chips" id="filterCatChips"></div>
+      </div>
+      <div class="para">
+        <span class="field-label">Tags</span>
+        <div id="filterTagMount"></div>
+        <div class="chips" id="filterTagChips"></div>
+      </div>
+      <div class="para">
+        <span class="field-label">Exclude tags</span>
+        <div id="filterExMount"></div>
+        <div class="chips" id="filterExChips"></div>
+      </div>
+      <p class="muted small" id="filterResult"></p>
+    </div>
+  </aside>
+
+  <!-- Hamburger drawer -->
+  <aside class="side-panel drawer" id="drawer" aria-label="Menu" aria-hidden="true">
+    <div class="panel-head">
+      <div class="panel-title"><span class="logo" data-icon="logo"></span><h2>LibraryHist</h2></div>
+      <button type="button" class="icon-btn" id="drawerClose" aria-label="Close menu" data-icon="x"></button>
+    </div>
+    <div class="drawer-scroll">
+      <nav class="drawer-nav">
+        <button type="button" id="drawerHome"><span data-icon="home"></span>Home</button>
+      </nav>
+
+      <div class="drawer-sec">
+        <div class="drawer-sec-head">
+          <h3>Categories</h3>
+          <button type="button" class="icon-btn" id="drawerCatAdd" aria-label="New category" data-icon="plus"></button>
+        </div>
+        <ul class="drawer-list" id="drawerCats"></ul>
+      </div>
+
+      <div class="drawer-sec">
+        <div class="drawer-sec-head">
+          <h3>Tags</h3>
+          <button type="button" class="icon-btn" id="drawerTagEdit" aria-label="Edit tags" data-icon="editNote"></button>
+        </div>
+        <div class="drawer-tags" id="drawerTags"></div>
+      </div>
+    </div>
+    <div class="drawer-foot">
+      <button type="button" class="drawer-setting" id="drawerSettings"><span data-icon="gear"></span>Setting</button>
+    </div>
+  </aside>
+
+  <!-- Shared popover menu + dialog -->
+  <div class="menu pop-menu" id="popMenu" role="menu" hidden></div>
+  <dialog class="dlg" id="dlg"></dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
