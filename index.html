@@ -6,6 +6,15 @@
   <title>LibraryHist</title>
   <meta name="description" content="Keep track of the latest chapter or volume you read.">
   <meta name="theme-color" content="#16140f">
+  <script>
+    // Apply the saved theme before first paint (Setting → Theme).
+    try {
+      if (localStorage.getItem('libraryhist.theme') === 'manga') {
+        document.documentElement.dataset.theme = 'manga';
+        document.querySelector('meta[name="theme-color"]').content = '#f6f6f3';
+      }
+    } catch { /* default: retro */ }
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600;700&display=swap">
@@ -120,6 +129,12 @@
             <button type="button" class="image-remove" id="imageRemove" aria-label="Remove image" data-icon="x" hidden></button>
             <span class="muted small">Tap to choose an image</span>
           </div>
+          <div class="style-switch" id="fStyleRow" hidden>
+            <span id="fStyleLabel" class="small">Image style</span>
+            <span class="switch-opt" data-style="original">Original</span>
+            <button type="button" class="switch" id="fThemed" role="switch" aria-checked="false" aria-labelledby="fStyleLabel"><span class="switch-thumb"></span></button>
+            <span class="switch-opt" data-style="themed" id="fThemedName">Retro</span>
+          </div>
         </div>
 
         <div class="field" id="fCategoryField">
@@ -216,6 +231,11 @@
       <button type="button" class="link-btn" data-back>Back</button>
     </div>
     <div class="settings-list">
+      <button type="button" class="settings-row" data-go="theme">
+        <span data-icon="brush"></span>
+        <span class="settings-label">Theme<small class="settings-hint" id="themeHint"></small></span>
+        <span data-icon="chevR" class="row-chev"></span>
+      </button>
       <button type="button" class="settings-row" data-go="history">
         <span data-icon="history"></span><span class="settings-label">History</span>
         <span class="muted small" id="histCountLbl"></span><span data-icon="chevR" class="row-chev"></span>
@@ -241,6 +261,15 @@
     </div>
     <p class="muted small backup-status" id="backupStatus" role="status"></p>
     <input type="file" id="importInput" accept=".zip,application/zip" hidden>
+  </section>
+
+  <!-- Theme -->
+  <section id="themeView" class="view app" hidden aria-labelledby="themeHeading">
+    <div class="page-head">
+      <div class="page-title"><span data-icon="brush"></span><h2 id="themeHeading">Theme</h2></div>
+      <button type="button" class="link-btn" data-back>Back</button>
+    </div>
+    <div class="theme-list" id="themeList" role="radiogroup" aria-labelledby="themeHeading"></div>
   </section>
 
   <!-- History -->
@@ -317,6 +346,7 @@
     <div class="drawer-scroll">
       <nav class="drawer-nav">
         <button type="button" id="drawerHome"><span data-icon="home"></span>Home</button>
+        <button type="button" id="drawerAdd"><span data-icon="plus"></span>Add title</button>
       </nav>
 
       <div class="drawer-sec">

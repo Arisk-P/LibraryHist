@@ -24,3 +24,5 @@ images/<id>.jpg   one cover per title (the "Image" column points to it)
 **Import** reads the same format and replaces the whole library (after a confirmation).
 Categories and tags are matched by name, so you can add rows in Excel: only the `Name` column is required;
 `Publisher`, `Author` and `Tags` take several names separated by `;`.
+`Image Style` is `Theme` (cover uses the current theme's filter) or `Original` (empty means Original).
+The theme itself (Setting → Theme: Retro or Manga) is saved per device and is not part of the backup.

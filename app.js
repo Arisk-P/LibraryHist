@@ -46,6 +46,7 @@ const I = {
   search: svg('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>'),
   filter: svg('<path d="M3 5h18l-7 8.5V20l-4-2v-4.5z"/>'),
   reset: svg('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>'),
+  brush: svg('<path d="m14.622 17.897-10.68-2.913"/><path d="M18.376 2.622a1 1 0 1 1 3.002 3.002L17.36 9.643a.5.5 0 0 0 0 .707l.944.944a2.41 2.41 0 0 1 0 3.408l-.944.944a.5.5 0 0 1-.707 0L8.354 7.348a.5.5 0 0 1 0-.707l.944-.944a2.41 2.41 0 0 1 3.408 0l.944.944a.5.5 0 0 0 .707 0z"/><path d="M9 8c-1.804 2.71-3.97 3.46-6.583 3.948a.507.507 0 0 0-.302.819l7.32 8.883a1 1 0 0 0 1.185.204C12.735 20.405 16 16.792 16 15"/>'),
   history: svg('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/>'),
   x: svg('<path d="M18 6 6 18M6 6l12 12"/>'),
   plus: svg('<path d="M12 5v14M5 12h14"/>'),
@@ -83,6 +84,7 @@ function migrate(d) {
   }
   d.tags.forEach((t) => { t.type = TAG_TYPES.some((x) => x.id === t.type) ? t.type : 'general'; });
   const fixTitle = (t) => {
+    if ('retro' in t) { t.themed = t.themed || !!t.retro; delete t.retro; } // renamed field
     const c = d.categories.find((x) => x.id === t.categoryId);
     if (c) t.unit = c.unit;
     else { t.categoryId = NONE; t.unit = t.unit || 'Chapter'; }
@@ -420,7 +422,7 @@ const confirmBox = (title, message, confirmText = 'Delete', danger = true) =>
    ========================================================= */
 const VIEW_EL = {
   home: 'listView', category: 'listView', titleForm: 'titleFormView', categoryForm: 'categoryFormView',
-  tags: 'tagsView', settings: 'settingsView', history: 'historyView', trash: 'trashView', browse: 'browseView',
+  tags: 'tagsView', settings: 'settingsView', theme: 'themeView', history: 'historyView', trash: 'trashView', browse: 'browseView',
 };
 let current = { view: 'home', depth: 0 };
 const scrollMem = {};
@@ -472,6 +474,7 @@ const ENTER = {
     $('#backupStatus').textContent = '';
     renderSettings();
   },
+  theme() { renderThemes(); },
   history() { renderHistory(); },
   trash() {
     if (purgeTrash()) save();
@@ -530,10 +533,14 @@ function enterList(scope) {
   renderHome();
 }
 
+/** Cover image; "themed" titles get the current theme's filter (Retro: sepia + grain, Manga: black & white + screentone). */
+function imageHtml(src, themed, attrs = 'alt="" loading="lazy" decoding="async"') {
+  return themed
+    ? `<img class="is-themed" src="${esc(src)}" ${attrs}><span class="theme-fx" aria-hidden="true"></span>`
+    : `<img src="${esc(src)}" ${attrs}>`;
+}
 function coverHtml(t) {
-  return t.image
-    ? `<img src="${esc(t.image)}" alt="" loading="lazy" decoding="async">`
-    : `<div class="cover-ph">${I.book}</div>`;
+  return t.image ? imageHtml(t.image, t.themed) : `<div class="cover-ph">${I.book}</div>`;
 }
 
 const scopeTitles = () => (ui.scope ? db.titles.filter((t) => t.categoryId === ui.scope) : db.titles);
@@ -883,6 +890,7 @@ $('#filterReset').addEventListener('click', () => {
 /* --- hamburger drawer --- */
 function renderDrawer() {
   $('#drawerHome').classList.toggle('is-active', current.view === 'home');
+  $('#drawerAdd').classList.toggle('is-active', current.view === 'titleForm' && !current.id);
   const cats = sortedCats();
   $('#drawerCats').innerHTML = cats.length
     ? cats.map((c) => `<li><button type="button" class="drawer-cat${current.view === 'category' && current.id === c.id ? ' is-active' : ''}" data-cat="${c.id}">
@@ -901,6 +909,11 @@ function renderDrawer() {
 $('#menuBtn').addEventListener('click', () => { renderDrawer(); showPanel(el.drawer); });
 $('#drawerClose').addEventListener('click', closePanels);
 $('#drawerHome').addEventListener('click', () => (current.view === 'home' ? closePanels() : go('home')));
+// From a category page the new title starts in that category
+$('#drawerAdd').addEventListener('click', () => {
+  if (current.view === 'titleForm' && !current.id) closePanels();
+  else go('titleForm', current.view === 'category' ? { cat: current.id } : {});
+});
 $('#drawerCatAdd').addEventListener('click', () => go('categoryForm'));
 $('#drawerCats').addEventListener('click', (e) => {
   const b = e.target.closest('[data-cat]');
@@ -928,6 +941,9 @@ const f = {
   tagChips: $('#fTagChips'),
   url: $('#fUrl'),
   urlOpen: $('#fUrlOpen'),
+  styleRow: $('#fStyleRow'),
+  themed: $('#fThemed'),
+  themedName: $('#fThemedName'),
   error: $('#formError'),
   del: $('#formDelete'),
   submit: $('#formSubmit'),
@@ -975,9 +991,14 @@ function renderFormTags() {
   formTagDD.refresh();
 }
 function renderFormImage() {
-  f.preview.querySelectorAll('img, .cover-ph').forEach((n) => n.remove());
-  f.preview.insertAdjacentHTML('afterbegin', form.image ? `<img src="${esc(form.image)}" alt="Title image preview">` : `<div class="cover-ph">${I.book}</div>`);
+  f.preview.querySelectorAll('img, .cover-ph, .theme-fx').forEach((n) => n.remove());
+  f.preview.insertAdjacentHTML('afterbegin', form.image ? imageHtml(form.image, form.themed, 'alt="Title image preview"') : `<div class="cover-ph">${I.book}</div>`);
   f.imageRemove.hidden = !form.image;
+  // Original / <current theme> switch only matters when there is an image
+  f.styleRow.hidden = !form.image;
+  f.themedName.textContent = themeById(currentTheme()).name;
+  f.themed.setAttribute('aria-checked', String(form.themed));
+  $$('.switch-opt', f.styleRow).forEach((o) => o.classList.toggle('is-on', (o.dataset.style === 'themed') === form.themed));
 }
 function normalizeUrl(u) {
   const s = u.trim();
@@ -997,8 +1018,8 @@ function openForm(id, presetCat) {
 
   const lockedCat = !t && presetCat && realCat(presetCat) ? presetCat : null;
   form = t
-    ? { id: t.id, name: t.name, image: t.image || null, categoryId: realCat(t.categoryId) ? t.categoryId : NONE, unit: unitOfTitle(t), number: t.number ?? '', tags: [...t.tags], url: t.url || '' }
-    : { id: null, name: '', image: null, categoryId: lockedCat || ui.home.filter.category || NONE, unit: 'Chapter', number: '', tags: [], url: '' };
+    ? { id: t.id, name: t.name, image: t.image || null, themed: !!t.themed, categoryId: realCat(t.categoryId) ? t.categoryId : NONE, unit: unitOfTitle(t), number: t.number ?? '', tags: [...t.tags], url: t.url || '' }
+    : { id: null, name: '', image: null, themed: false, categoryId: lockedCat || ui.home.filter.category || NONE, unit: 'Chapter', number: '', tags: [], url: '' };
   if (form.categoryId !== NONE && !realCat(form.categoryId)) form.categoryId = NONE;
 
   f.heading.textContent = t ? 'Edit Title' : 'New Title';
@@ -1050,6 +1071,11 @@ f.image.addEventListener('change', async () => {
   }
 });
 f.imageRemove.addEventListener('click', () => { form.image = null; renderFormImage(); });
+f.themed.addEventListener('click', () => { form.themed = !form.themed; renderFormImage(); });
+f.styleRow.addEventListener('click', (e) => {
+  const o = e.target.closest('.switch-opt');
+  if (o) { form.themed = o.dataset.style === 'themed'; renderFormImage(); }
+});
 
 f.tagChips.addEventListener('click', (e) => {
   const b = e.target.closest('[data-remove]');
@@ -1076,7 +1102,7 @@ f.form.addEventListener('submit', (e) => {
 
   const now = Date.now();
   const data = {
-    name, image: form.image, categoryId: form.categoryId, unit: formUnit(), number,
+    name, image: form.image, themed: !!(form.image && form.themed), categoryId: form.categoryId, unit: formUnit(), number,
     tags: form.tags.filter((id) => tagById(id)), url: normalizeUrl(f.url.value),
   };
   const ok = commit(() => {
@@ -1362,7 +1388,40 @@ $('#browseList').addEventListener('click', (e) => {
 /* =========================================================
    Setting, History
    ========================================================= */
+/* --- Theme (saved per device; index.html applies it before first paint) --- */
+const THEME_KEY = 'libraryhist.theme';
+const THEMES = [
+  { id: 'retro', name: 'Retro', desc: 'Kraft paper, ink and olive. Theme images: sepia with paper grain.', color: '#16140f' },
+  { id: 'manga', name: 'Manga', desc: 'Black ink on white with screentone. Theme images: black & white.', color: '#f6f6f3' },
+];
+const themeById = (id) => THEMES.find((t) => t.id === id) || THEMES[0];
+function currentTheme() {
+  return themeById(document.documentElement.dataset.theme).id;
+}
+function applyTheme(id) {
+  const t = themeById(id);
+  if (t.id === THEMES[0].id) delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = t.id;
+  $('meta[name="theme-color"]')?.setAttribute('content', t.color);
+  try { localStorage.setItem(THEME_KEY, t.id); } catch { /* still applied for this visit */ }
+}
+function renderThemes() {
+  const cur = currentTheme();
+  $('#themeList').innerHTML = THEMES.map((t) => `<button type="button" class="theme-opt" role="radio" aria-checked="${t.id === cur}" data-theme-id="${t.id}">
+      <span class="theme-swatch swatch-${t.id}" aria-hidden="true"><i class="sw-band"></i><span class="sw-cards"><i></i><i></i><i></i></span></span>
+      <span class="theme-info"><span class="theme-name">${esc(t.name)}</span><span class="theme-desc">${esc(t.desc)}</span></span>
+      <span class="theme-radio" aria-hidden="true">${t.id === cur ? I.check : ''}</span>
+    </button>`).join('');
+}
+$('#themeList').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-theme-id]');
+  if (!b) return;
+  applyTheme(b.dataset.themeId);
+  renderThemes();
+});
+
 function renderSettings() {
+  $('#themeHint').textContent = themeById(currentTheme()).name;
   $('#histCountLbl').textContent = db.history.length ? String(db.history.length) : '';
   $('#trashCountLbl').textContent = db.trash.length ? String(db.trash.length) : '';
 }
@@ -1534,7 +1593,7 @@ $('#tsDelete').addEventListener('click', () => deleteForever([...ui.trashSelecte
    ========================================================= */
 const BACKUP_LIBS = { JSZip: 'vendor/jszip.min.js', XLSX: 'vendor/xlsx.mini.min.js' };
 const NAME_SEP = '; ';
-const TITLE_COLS = ['ID', 'Name', 'Category', 'Unit', 'Number', 'Publisher', 'Author', 'Tags', 'URL', 'Favorite', 'Image', 'Created', 'Modified'];
+const TITLE_COLS = ['ID', 'Name', 'Category', 'Unit', 'Number', 'Publisher', 'Author', 'Tags', 'URL', 'Favorite', 'Image', 'Image Style', 'Created', 'Modified'];
 const SHEETS = { titles: 'Titles', deleted: 'Recently Deleted', categories: 'Categories', tags: 'Tags', history: 'History' };
 const IMG_EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
 const EXT_MIME = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif' };
@@ -1617,7 +1676,7 @@ async function buildBackupZip() {
     return {
       ID: t.id, Name: t.name, Category: realCat(t.categoryId)?.name || 'None', Unit: unitOfTitle(t),
       Number: t.number ?? '', Publisher: names('publisher'), Author: names('author'), Tags: names('general'),
-      URL: t.url || '', Favorite: t.favorite ? 'Yes' : 'No', Image: image,
+      URL: t.url || '', Favorite: t.favorite ? 'Yes' : 'No', Image: image, 'Image Style': t.themed ? 'Theme' : 'Original',
       Created: fmtStamp(t.createdAt), Modified: fmtStamp(t.updatedAt),
     };
   };
@@ -1627,7 +1686,7 @@ async function buildBackupZip() {
     ws['!cols'] = widths.map((wch) => ({ wch }));
     return ws;
   };
-  const titleWidths = [14, 32, 16, 9, 9, 20, 20, 28, 36, 9, 24, 20, 20];
+  const titleWidths = [14, 32, 16, 9, 9, 20, 20, 28, 36, 9, 24, 12, 20, 20];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, sheet([...db.titles].sort(byName).map(titleRow), TITLE_COLS, titleWidths), SHEETS.titles);
   XLSX.utils.book_append_sheet(wb, sheet(
@@ -1743,7 +1802,7 @@ async function readBackupZip(file) {
     let image = null;
     try { image = await loadImage(r.image, id); } catch { /* skip unreadable image */ }
     return {
-      id, name, image, categoryId,
+      id, name, image, themed: !!image && ['theme', 'themed', 'retro', 'manga'].includes(norm(r['image style'])), categoryId,
       unit: categoryId === NONE ? normUnit(r.unit) : next.categories.find((c) => c.id === categoryId).unit,
       number, tags: [...new Set(tagIds)], url: normalizeUrl(String(r.url ?? '')),
       favorite: /^(yes|y|true|1)$/i.test(String(r.favorite ?? '').trim()),
