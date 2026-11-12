@@ -1412,8 +1412,14 @@ function applyTheme(id) {
   if (t.id === THEMES[0].id) delete document.documentElement.dataset.theme;
   else document.documentElement.dataset.theme = t.id;
   $('meta[name="theme-color"]')?.setAttribute('content', t.color);
+  syncSystemBars(t);
   try { localStorage.setItem(THEME_KEY, t.id); } catch { /* still applied for this visit */ }
 }
+/* Android app: colour the phone's status bar + navigation bar like the theme */
+function syncSystemBars(t = themeById(currentTheme())) {
+  try { window.Android?.setSystemBars?.(t.color, t.id !== 'retro'); } catch { /* browser */ }
+}
+syncSystemBars();
 function renderThemes() {
   const cur = currentTheme();
   $('#themeList').innerHTML = THEMES.map((t) => `<button type="button" class="theme-opt" role="radio" aria-checked="${t.id === cur}" data-theme-id="${t.id}">
@@ -1655,13 +1661,23 @@ async function exportZip() {
   setBackupBusy(true, 'Preparing export…');
   try {
     const { blob, images } = await buildBackupZip();
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `libraryhist-backup-${fmtStamp(Date.now()).slice(0, 10)}.zip`;
-    document.body.append(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    const name = `libraryhist-backup-${fmtStamp(Date.now()).slice(0, 10)}.zip`;
+    if (window.Android?.saveFile) {            // running inside the Android app
+      const b64 = await new Promise((ok) => {
+        const r = new FileReader();
+        r.onload = () => ok(r.result.split(',')[1]);
+        r.readAsDataURL(blob);
+      });
+      Android.saveFile(name, b64);
+    } else {                                    // normal browser
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    }
     setBackupBusy(false, `Exported ${db.titles.length} titles and ${images} images.`);
   } catch (err) {
     setBackupBusy(false, `Export failed: ${err.message || err}`);
