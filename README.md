@@ -2,6 +2,14 @@
 
 Keeps track of the latest chapter / volume you read for each title.
 
+## Download (Android)
+
+[LibraryHist_v1.0.0](https://github.com/Arisk-P/LibraryHist/raw/main/LibraryHist_v1.0.0.apk)
+
+Open the file on your phone to install it. If Android blocks it, allow **Install unknown apps** for the app you opened it from (Files, Chrome, …).
+
+## Web
+
 No build step and no dependencies: open `index.html` in a browser.
 Data is stored in the browser's `localStorage`.
 
