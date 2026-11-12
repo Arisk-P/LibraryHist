@@ -37,7 +37,16 @@ const svg = (body, extra = '') =>
   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${body}</svg>`;
 const I = {
   menu: svg('<path d="M4 6h16M4 12h16M4 18h16"/>'),
-  logo: svg('<path d="M4 19.5V5a2 2 0 0 1 2-2h13v15H6.5A2.5 2.5 0 0 0 4 20.5 2.5 2.5 0 0 0 6.5 23H19v-5"/><path d="M9 7h6"/>'),
+  /* Brand emblem: book stack + hourglass. Details are cut out with a mask so it sits on any theme.
+     "-ID" is replaced per use so each copy has its own mask id. */
+  logo: `<svg viewBox="156 100 450 422" aria-hidden="true"><defs><mask id="logoMask-ID" maskUnits="userSpaceOnUse" x="156" y="100" width="450" height="422">
+<g fill="#fff"><rect x="200" y="202" width="362" height="74" rx="8"/><rect x="160" y="288" width="442" height="152" rx="10"/><rect x="187" y="453" width="400" height="65" rx="8"/>
+<rect x="475" y="105" width="87" height="11" rx="4"/><rect x="475" y="189" width="87" height="11" rx="4"/></g>
+<g stroke="#000" stroke-width="5" stroke-linecap="round"><path d="M222 213v52M233 213v52M529 213v52M540 213v52M183 303v122M195 303v122M567 303v122M579 303v122M208 465v42M219 465v42M555 465v42M566 465v42M273 486h227"/></g>
+<g fill="#000" font-family="Oswald, sans-serif" text-anchor="middle"><text x="378" y="261" font-size="54" font-weight="500" letter-spacing="7">LIBRARY</text><text x="381" y="418" font-size="150" font-weight="700" letter-spacing="4">HIST</text></g>
+</mask></defs><rect x="156" y="100" width="450" height="422" fill="currentColor" mask="url(#logoMask-ID)"/>
+<path d="M492 116h53l-26.5 36 26.5 37h-53l26.5-37z" fill="none" stroke="currentColor" stroke-width="7" stroke-linejoin="round"/>
+<path d="M503 128h31l-15.5 17zM518.5 166l17 18h-34z" fill="currentColor"/></svg>`,
   book: svg('<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>', 'stroke-width="1.5"'),
   chevL: svg('<path d="m15 18-6-6 6-6"/>'),
   chevR: svg('<path d="m9 18 6-6-6-6"/>'),
@@ -66,7 +75,7 @@ const I = {
   home: svg('<path d="m3 11 9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'),
   gear: svg('<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>'),
 };
-$$('[data-icon]').forEach((el) => { el.insertAdjacentHTML('afterbegin', I[el.dataset.icon] || ''); });
+$$('[data-icon]').forEach((el, n) => { el.insertAdjacentHTML('afterbegin', (I[el.dataset.icon] || '').replaceAll('-ID', `-${n}`)); });
 
 /* =========================================================
    Data

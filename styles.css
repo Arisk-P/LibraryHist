@@ -143,13 +143,11 @@ h1, h2, h3 { margin: 0; }
   height: 56px; padding: 0 8px 0 4px;
   display: flex; align-items: center; gap: 8px;
 }
-.logo {
-  width: 32px; height: 32px; border-radius: var(--radius);
-  background: var(--accent); color: var(--accent-ink);
-  display: grid; place-items: center; flex: none;
-}
-.logo svg { width: 18px; height: 18px; }
-.app-name { font-size: 19px; font-weight: 700; letter-spacing: -.01em; }
+/* Brand emblem (book stack + hourglass), drawn in the text colour */
+.logo { display: block; flex: none; width: 41px; height: 38px; }
+.logo svg { display: block; width: 100%; height: 100%; }
+.app-name { font-size: 19px; font-weight: 400; letter-spacing: .02em; }
+.app-name b { font-weight: 700; }
 
 /* ---------- Buttons ---------- */
 .icon-btn {
@@ -794,7 +792,10 @@ a.cover.has-link:hover img { transform: scale(1.03); }
 /* Header + drawer */
 .app-header { background: var(--bg); background-image: var(--grain); backdrop-filter: none; border-bottom: 1px dotted var(--line); }
 .app-name { font-size: 24px; color: var(--hi); }
-.logo { background: var(--hi); color: var(--hi-ink); }
+/* Wordmark: LIBRARY (regular) + HIST (bold) in Oswald, like the brand logo */
+.app-name, .panel-title .app-name { font-family: var(--font-body); font-weight: 400; letter-spacing: .03em; }
+.app-name b { font-weight: 700; }
+.logo { color: var(--hi); }
 .side-panel { background: var(--bg); background-image: var(--grain); border-right: 1px dotted var(--line); }
 .panel-head { border-bottom: 1px dotted var(--line); }
 .panel-title h2 { font-size: 22px; color: var(--hi); }
